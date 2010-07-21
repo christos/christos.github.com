@@ -1,0 +1,135 @@
+body {
+  background: #fff url(/images/body_bg.png) repeat-x 0 0;
+}
+
+p {
+  font: normal normal normal 16px/1.5 Helvetica, Arial, sans-serif;
+  line-height: 1.5;  
+}
+
+div.container {
+  margin-top: 15px;
+}
+
+#sidebar {
+  text-align: right;
+}
+
+img.logo {
+  width: 175px;
+}
+
+img.avatar {
+  width: 54px;
+  padding: 3px;
+  border: 1px solid #ccc;
+}
+
+div.header {
+  height: 160px;
+}
+
+h1, h2, h3 {
+  font-family: Impact, Futura-CondensedExtraBold, Helvetica-Bold, Helvetica;
+  color: #39342D;
+}
+
+h2 {
+  font-size: 2.5em;
+  line-height: 1;
+}
+
+a {
+  color: #c40012;
+}
+
+a:hover {
+  color: #f00;
+}
+
+
+#header {
+  overflow: auto;
+  margin: 0 0 20px 0;
+}
+
+#header h1 img {
+  float: left;
+  margin-top: -25px;
+}
+
+#header h1 {
+  margin-top: 25px;
+  font-size: 8.6em;
+  margin-bottom: 0;
+}
+
+#header h2 {
+  border-top: 3px solid #39342D;
+  margin-left: 150px;
+  color: #39342D;
+  font-size: 2em;
+}
+
+
+.posts {
+  clear: both;
+  margin-left: 150px;
+}
+
+.posts h2 {
+  margin-bottom: 0;
+}
+
+p.tags {
+  margin: 0; padding: 0;
+  color: #c40012;
+  font-size: 1em;
+  font-family: Impact, Futura-CondensedExtraBold, Helvetica-Bold, Helvetica;
+}
+ 
+p.about {
+  color: #bbb;
+  font-style: italic;
+  font-size: 1em;
+}
+
+#footer {
+  border-top: 1px solid #999;
+}
+
+#footer p {
+  float: right;
+}
+
+#footer img.avatar {
+  width: 34px;
+  margin: 10px 0 -6px 0;
+}
+
+/* Code blocks and inline code */
+
+.highlight {
+  background: none;
+}
+
+.highlight pre {
+  border:1px solid #ccc; 
+  border-width:1px 0;
+  overflow:auto; 
+  background: ghostWhite; 
+  margin:0 0 20px; 
+  padding:5px 10px;  
+  font-size:12px; 
+}
+
+.highlight pre, .highlight code, .highlight tt {
+  font-family: Helvetica, sans-serif;
+}
+
+.posts p code {
+  border: 1px solid #ccc;
+  font-size: 14px;
+  padding: 0 2px;
+  background: ghostWhite;
+}

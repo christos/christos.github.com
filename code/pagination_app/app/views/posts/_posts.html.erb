@@ -1,0 +1,14 @@
+<div id='posts'>
+
+  <%= page_entries_info @posts %>
+
+  <% @posts.each do |post| %>
+    <% div_for post do %>
+      <h2><%= post.title %></h2>
+      <p><%= post.body %></p>
+      <%= button_to 'Delete', post_path(post), :remote => true, :method => :delete %>
+    <% end %>
+  <% end %>
+
+  <%= will_paginate @posts, :params => { :controller => 'posts', :action => 'index' } %>
+</div>

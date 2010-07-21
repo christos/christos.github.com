@@ -1,0 +1,174 @@
+---
+layout: post
+title: "In-place modification and re-pagination of a collection of elements"
+subject: "rails, pagination, and UI patterns"
+about: "...where I explain how to go about removing elements while always staying on the right page."
+---
+
+What follows is my take on implementing the common UI pattern of removing and element from a collection, which is displayed as a list.
+
+h3. The interaction; described
+
+A *user*, on a given page of a *paginated collection* of elements, *deletes* an element. 
+
+The element disappears. 
+
+All the elements below the deleted item move up one position. If the current page is not the last page of the collection, an element from the next page comes in, to replace the gap left by the last element, thus maintaining the number of elements per page constant. 
+
+In the *edge case*, where the user deletes the *last element* of the *last page* of the collection, he gets re-directed to the previous page, which is now the last page of the updated collection.
+
+My approach to implementing this in Rails involves the @will_paginate@ plugin, a RESTful controller, and a few extra bits and bobs. Lets imagine deleting a post from a list of posts.
+
+h3. STEP 1: No AJAX, no edge cases
+
+Simple. After destroying an element, re-direct to @:back@. 
+
+The page number remains the same; @will_paginate@ takes care of loading the correct elements to display.
+
+{% highlight ruby %}
+# app/controllers/posts_controller.rb
+def index
+  @posts = Post.paginate(:page => params[:page])
+end
+
+def destroy
+  @post = Post.find(params[:id])
+
+  if @post.destroy
+    redirect_to :back
+  end
+end
+{% endhighlight %}
+
+h3. STEP 2: Deal with the edge case
+
+To deal with the edge case of deleting the last element of the last page of the collection, I do the following:
+
+# Re-paginate the collection, after the deletion, so that the total page count is re-calculated.
+# Rewrite the URL of the page I want to redirect to, by decreasing @params[:page]@ by 1
+
+Here is the updated @destroy@ method plus two helper methods to keep some logic out of the actions:
+
+{% highlight ruby %}
+# app/controllers/posts_controller.rb
+def destroy
+  @post = Post.find(params[:id])
+
+  if @post.destroy
+    @posts = Post.paginate(:page => current_page)
+    redirect_to adjusted_page_url
+  end
+end
+
+private
+  def current_page
+    return params[:page] if params[:page].present?
+    return '1' if request.env['HTTP_REFERER'].blank?
+
+    uri = URI.parse(request.env['HTTP_REFERER'])
+    query_hash = Rack::Utils.parse_query(uri.query)
+    query_hash['page'] || 1
+  end
+
+  def adjusted_page_url
+    return :back unless @posts.out_of_bounds?
+
+    uri = URI.parse(request.env['HTTP_REFERER'])
+    query_hash = Rack::Utils.parse_query(uri.query)
+
+    query_hash['page'] = [1, (query_hash['page'].to_i - 1)].max
+    uri.query = query_hash.to_query
+    return uri.to_s
+  end    
+{% endhighlight %}
+
+The @current_page@ method extracts the current page number, either from the @parms@ hash if it exists, or the query string of the @HTTP_REFERER@. 
+
+The @adjusted_page_url@ method rewrites the URL of the @HTTP_REFERER@, decreasing the page number by 1.
+
+Note that I use the @out_of_bounds?@ helper method of @will_paginate@. This method returns @true@ if the collection received a @paginate@ call with a @:page@ parameter larger that the collection's actual page count.
+
+h3. STEP 3: Adding AJAX support.
+
+To get AJAX working after re-paginating the collection, and provided that we don't hit the edge case, @destroy.js.rjs@ just replaces the elements list with the new one.
+
+For the edge case, I render an inline RJS update that re-directs to the new last page of the collection. 
+
+This can be done either inline, as in the code below, or in @destroy.js.rjs@. Notice that I need to save the URL returned by @adjusted_page_url@ to an instance variable because the method is not available in the @render@ block.
+
+{% highlight ruby %}
+# app/controllers/posts_controller.rb
+def destroy
+  @post = Post.find(params[:id])
+
+  respond_to do |wants|
+    if @post.destroy
+      @posts = Post.paginate(:page => current_page)
+
+      wants.html { redirect_to adjusted_page_url || :back }
+      wants.js do
+        render(:update) { |page| page.redirect_to @back } if @back = adjusted_page_url
+      end
+    end
+  end
+end
+{% endhighlight %}
+
+{% highlight ruby %}
+# app/views/posts/destroy.js.rjs
+page.replace 'posts', :partial => 'posts'
+{% endhighlight %}
+
+h3. SUMMARY: The controller, a sample application, and feedback
+
+What follows is the entire code for the @PostsController@. To get a feel of how all of the above works together, I've put together "a sample application":/code/pagination_app.tgz that you can download.
+
+{% highlight ruby %}
+class PostsController < ApplicationController
+
+  def index
+    @posts = Post.paginate(:page => current_page)
+  end
+
+  def destroy
+    @post = Post.find(params[:id])
+
+    respond_to do |wants|
+      if @post.destroy
+        @posts = Post.paginate(:page => current_page)
+
+        wants.html { redirect_to adjusted_page_url || :back }
+        wants.js do
+          render(:update) { |page| page.redirect_to @back } if @back = adjusted_page_url
+        end
+      end
+    end
+
+  end
+
+  private
+    def current_page
+      return params[:page] if params[:page].present?
+      return '1' if request.env['HTTP_REFERER'].blank?
+
+      uri = URI.parse(request.env['HTTP_REFERER'])
+      query_hash = Rack::Utils.parse_query(uri.query)
+      query_hash['page'] || 1
+    end
+
+    def adjusted_page_url
+      return nil unless @posts.out_of_bounds?
+
+      uri = URI.parse(request.env['HTTP_REFERER'])
+      query_hash = Rack::Utils.parse_query(uri.query)
+
+      query_hash['page'] = [1, (query_hash['page'].to_i - 1)].max
+      uri.query = query_hash.to_query
+      return uri.to_s
+    end
+
+end
+
+{% endhighlight %}
+
+_Remember! Comment systems are for fools. Heroes get in touch "the old fashioned way":mailto:christos@42linesofcode.com_

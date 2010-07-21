@@ -1,0 +1,16 @@
+---
+layout: default
+title: 42linesofcode.com
+---
+
+<div id="home">
+  <div class="posts">
+    {% for post in site.posts limit:5 %}
+      <p class='tags'>a story about {{ post.subject }}</p>
+      <h2>{{ post.title }}</h2>
+      <p class='about'>{{ post.about }}<p>
+      {{ post.content }}
+    {% endfor %}
+  </div>
+</div>
+  
